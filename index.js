@@ -63,8 +63,46 @@ async function run() {
         res.send(result)
         
     })
-    
 
+//   get some data from all the my booking data
+app.get('/booking' , async(req ,res)=>{
+    let query={}
+
+    if(req.query?.email){
+        query={email:req.query.email}
+    }
+    
+    const result=await bookingCollection.find(query).toArray()
+    res.send(result);
+})
+// delete one card
+app.delete('/booking/:id',async(req,res)=>{
+  const id=req.params.id
+  const query={
+    _id:new ObjectId(id)
+  }
+  const result=await bookingCollection.deleteOne(query)
+  res.send(result)
+})
+// updated data
+app.patch('/booking/:id' ,async(req ,res) =>{
+    const id=req.params.id
+    const filter={
+      _id:new ObjectId(id)
+    }
+    const updateBooking=req.body;;
+    console.log(updateBooking)
+ 
+
+    const updateDoc={
+      $set:{
+        status:updateBooking.status
+      },
+    }
+    const result=await bookingCollection.updateOne(filter,updateDoc)
+    res.send(result)
+
+  })
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
