@@ -2,11 +2,18 @@ const express = require('express')
 const cors=require('cors')
 const app = express()
 require('dotenv').config()
+const jwt=require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port =process.env.PORT || 3000
 
 //MiddleWare
 
+// app.use(cors({
+//     origin:[
+//        ' http://localhost:3000'
+//     ]
+//     ,credentials:true
+// }))
 app.use(cors())
 app.use(express.json())
 
@@ -84,25 +91,34 @@ app.delete('/booking/:id',async(req,res)=>{
   const result=await bookingCollection.deleteOne(query)
   res.send(result)
 })
-// updated data
-app.patch('/booking/:id' ,async(req ,res) =>{
-    const id=req.params.id
-    const filter={
-      _id:new ObjectId(id)
-    }
-    const updateBooking=req.body;;
-    console.log(updateBooking)
- 
 
-    const updateDoc={
-      $set:{
-        status:updateBooking.status
-      },
-    }
-    const result=await bookingCollection.updateOne(filter,updateDoc)
-    res.send(result)
+app.patch('/bookings/:id' ,async(req ,res) =>{
+  const id=req.params.id
+  const filter={
+    _id:new ObjectId(id)
+  }
+  const updateBooking=req.body;
+  console.log(updateBooking)
 
-  })
+
+  const updateDoc={
+    $set:{
+      status:updateBooking.status
+    },
+  }
+  const result=await bookingCollection.updateOne(filter,updateDoc)
+  res.send(result)
+
+})
+// security related api 
+  // app.post('/jwt' ,async(req ,res) =>{
+  //   const user=req.body
+  //   console.log('user for token' ,user)
+  //   const token=jwt.sign(user , process.env.ACCESS_TOKEN ,{expiresIn:"1h"})
+  //   res.send({token})
+  // })
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
