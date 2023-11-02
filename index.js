@@ -1,6 +1,7 @@
 const express = require('express')
 const cors=require('cors')
 const app = express()
+const cookiePaser=require('cookie-parser')
 require('dotenv').config()
 const jwt=require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -8,16 +9,36 @@ const port =process.env.PORT || 3000
 
 //MiddleWare
 
-// app.use(cors({
-//     origin:[
-//        ' http://localhost:3000'
-//     ]
-//     ,credentials:true
-// }))
-app.use(cors())
+app.use(cors({
+    origin:[
+      'http://localhost:5173'
+    ],
+    credentials:true 
+}))
+// app.use(cors())
 app.use(express.json())
+app.use(cookiePaser())
 
-
+// middlewares
+const logger=(req ,res ,next) =>{
+  console.log(req.method , req.url)
+  next();
+}
+const verifyToken=(req ,res ,next)=>{
+  const token=req?.cookies?.token
+  // console.log('jdhbfjkis',token)
+  if(!token){
+    return res.status(401).send({message:'Unauthorize'})
+  }
+  jwt.verify(token ,process.env.ACCESS_TOKEN ,(err ,decoded) =>{
+    if(err){
+      return res.status(401).send({message :"Unauthorize"})
+    }
+    req.user=decoded;
+    next();
+  })
+  // next();
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bw2yndc.mongodb.net/?retryWrites=true&w=majority`;
@@ -72,9 +93,13 @@ async function run() {
     })
 
 //   get some data from all the my booking data
-app.get('/booking' , async(req ,res)=>{
+app.get('/booking' ,logger,verifyToken, async(req ,res)=>{
+  console.log("user info" , req.user)
+  if(req.user.email !== req.query.email){
+    return res.status(403).send({message :"Forbiden user"})
+  }
     let query={}
-
+      
     if(req.query?.email){
         query={email:req.query.email}
     }
@@ -111,12 +136,23 @@ app.patch('/bookings/:id' ,async(req ,res) =>{
 
 })
 // security related api 
-  // app.post('/jwt' ,async(req ,res) =>{
-  //   const user=req.body
-  //   console.log('user for token' ,user)
-  //   const token=jwt.sign(user , process.env.ACCESS_TOKEN ,{expiresIn:"1h"})
-  //   res.send({token})
-  // })
+  app.post('/jwt' ,async(req ,res) =>{
+    const user=req.body
+    console.log('user for token' , user)
+    const token=jwt.sign(user , process.env.ACCESS_TOKEN ,{expiresIn:'1h'})
+    res.cookie('token' ,token ,{
+      httpOnly:true,
+      secure:true,
+      sameSite:'none'
+    })
+    res.send({success :true})
+  })
+  // remove token 
+  app.post('/logout' ,async(req ,res) =>{
+    const user=req.body;
+    console.log('ijusgdfis', user)
+    res.clearCookie('token' ,{maxAge: 0}).send({success: true})
+  })
 
 
     await client.db("admin").command({ ping: 1 });
